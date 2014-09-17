@@ -157,24 +157,4 @@ class LoginController{
 		$this->messages->save("Felaktigt användarnamn och/eller lösenord");
 		return false;
 	}
-	/*
-	* All that should be in the head of the html document we serve
-	*/
-	function getHead(){
-		$headHtml = "<title>Whatnow</title>";
-		return $headHtml;
-	}
-	function getBody(){
-		$this->reloadIfDidLogIn();
-
-		if($this->model->isUserLoggedIn()){
-			$html = "<p>Inloggad</p>" . $this->getMessage() . $this->getLogoutForm();
-		} else {
-			$html = "<p>Ej inloggad</p>" . $this->getMessage() . $this->getLoginForm();
-		}
-
-		$html .= $this->getTimeSwedishFormat();
-
-		return $html;
-	}
 }
