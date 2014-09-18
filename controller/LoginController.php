@@ -21,6 +21,11 @@ class LoginController{
 		$this->messages = new CookieStorage();
 		$this->loginView = new LoginView($this->model, $this->messages);
 	}
+	function getLogin(){
+		$this->reloadIfDidLogIn();
+		return Helpers::getBaseHTML($this->loginView->getHead(),
+									$this->loginView->getLogin());
+	}
 	function getHTML(){
 		$this->reloadIfDidLogIn();
 		return Helpers::getBaseHTML($this->loginView->getHead(), 
@@ -109,6 +114,7 @@ class LoginController{
 			//this is really ugly
 			if($this->canLoginWithCookie($_COOKIE[self::$usernameCookieName], $_COOKIE[self::$tokenCookieName])){
 				$this->loginWithCookie($_COOKIE[self::$usernameCookieName], $_COOKIE[self::$tokenCookieName]);
+				session_regenerate_id(true);
 				$this->messages->save("Inloggning lyckades via cookies");
 				return true;
 			}
@@ -116,7 +122,7 @@ class LoginController{
 		if($_SERVER["REQUEST_METHOD"]!=="POST"){
 			return false;
 		}
-		if(isset($_POST["logout"])){
+		if(isset($_POST["logout"]) && $this->model->isUserLoggedIn()){
 			$this->model->logoutUser();
 			$this->messages->save("Du har nu loggat ut");
 			$this->removeRememberMeCookies($_COOKIE["username"]);
@@ -144,7 +150,8 @@ class LoginController{
 
 		//This is also really ugly with 2 nested ifs
 		if($this->model->userExists($postUsername,$postPassword)){
-			$this->model->loginUser($postUsername);		
+			$this->model->loginUser($postUsername);	
+			session_regenerate_id(true);
 			if(!empty($_POST["rememberme"])){
 				$this->saveRememberMeCookie($postUsername);
 				$this->messages->save("Inloggning lyckades och vi kommer ihåg dig nästa gång");

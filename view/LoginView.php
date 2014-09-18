@@ -51,7 +51,6 @@ class LoginView{
 		return $headHtml;
 	}
 	function getBody(){
-
 		if($this->model->isUserLoggedIn()){
 			$html = "<p>Inloggad</p>" . $this->getMessage() . $this->getLogoutForm();
 		} else {
@@ -60,6 +59,11 @@ class LoginView{
 
 		$html .= $this->getTimeSwedishFormat();
 
+		return $html;
+	}
+	function getLogin(){
+		$html = "<p>Ej inloggad</p>" . $this->getMessage() . $this->getLoginForm();
+		$html .= $this->getTimeSwedishFormat();
 		return $html;
 	}
 }

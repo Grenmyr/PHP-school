@@ -14,6 +14,15 @@ class UserModel{
 		}
 		return false;
 	}
+	function checkSession(){
+		if(isset($_SESSION["loggedin"])){
+			if($_SESSION["remote_addr"] != $_SERVER["REMOTE_ADDR"]||$_SESSION["useragent"]!=$_SERVER["HTTP_USER_AGENT"])
+			{
+				unset($_SESSION["loggedin"]);
+				header("location: ".$_SERVER["PHP_SELF"]);
+			}
+		}
+	}
 	function loginUser($username){
 		$_SESSION["loggedin"] = true;
 		$_SESSION["remote_addr"] = $_SERVER["REMOTE_ADDR"];
