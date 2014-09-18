@@ -16,7 +16,7 @@ class UserModel{
 		return false;
 	}
 	function loginUser($username){
-		$_SESSION[self::$loggedIn] = true;
+		$_SESSION[UserModel::$loggedin] = true;
 		$_SESSION["remote_addr"] = $_SERVER["REMOTE_ADDR"];
 		$_SESSION["useragent"] = $_SERVER["HTTP_USER_AGENT"];
 		return;
@@ -29,7 +29,7 @@ class UserModel{
 		return;
 	}
 	function isUserLoggedIn(){
-		if(isset($_SESSION[self::$loggedIn])){
+		if(isset($_SESSION[UserModel::$loggedin])){
 			return true;
 		}
 		return false;

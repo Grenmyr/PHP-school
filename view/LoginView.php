@@ -1,5 +1,6 @@
 <?php
 require_once("CookieStorage/CookieStorage.php");
+
 class LoginView{
 	private $model;
 	private $message;
@@ -7,9 +8,10 @@ class LoginView{
 	private $password;
 	private $messages;
 
-	function __construct(UserModel $model, CookieStorage $cookieStorage){
+	function __construct(UserModel $model, CookieStorage $cookieStorage, $username){
 		$this->model = $model;
 		$this->messages = $cookieStorage;
+		$this->username = @$_SESSION["username"];
 	}
 	private function getLogoutForm(){
 		$logoutFormHtml = "	<form method='post'>
@@ -22,7 +24,6 @@ class LoginView{
 	private function getMessage(){
 		$this->message = $this->messages->load();
 		$getMessageHtml = "<p>{$this->message}</p>";
-
 		return $getMessageHtml;
 	}
 	/*

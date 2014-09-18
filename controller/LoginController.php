@@ -9,7 +9,6 @@ class LoginController{
 	private $model;
 	private $message;
 	private $username;
-	private $password;
 	private $messages;
 
 	//Statics so we can change them easier
@@ -27,24 +26,34 @@ class LoginController{
 	private static $loggedInAndRemember = "Inloggning lyckades och vi kommer ihåg dig nästa gång";
 	private static $loggedIn = "Inloggnig lyckades";
 
-	function __construct(){
+    /**
+     *
+     */
+    function __construct(){
 		$this->model = new UserModel();
 		$this->messages = new CookieStorage();
-		$this->loginView = new LoginView($this->model, $this->messages);
+		$this->loginView = new LoginView($this->model, $this->messages, $this->username);
 	}
-	function getHTML(){
-		$this->reloadIfDidLogIn();
 
+    /**
+     * @return string
+     */
+    function getHTML(){
+		$this->reloadIfDidLogIn();
 		return Helpers::getBaseHTML($this->loginView->getHead(), 
 									$this->loginView->getBody());
 	}
-	private function reloadPage(){
+
+    /**
+     *
+     */
+    private function reloadPage(){
 		header("location: " . $_SERVER["PHP_SELF"]);
 		die;
 	}
 	//Reload the page if user logged in now
 	private function reloadIfDidLogIn(){
-		if($this->didUserLogin()){
+		if($this->checkIfUserLoggedIn()){
 			$this->reloadPage();
 		}
 	}
@@ -89,7 +98,7 @@ class LoginController{
 	//Do the most of the checking to see if the user logged in
 	//Or logged out
 	//Also check if the user wanted to login with cookies
-	function didUserLogin(){
+	function checkIfUserLoggedIn(){
 		//Begin the checking to see if the user has a remember me cookie
 		if(!empty($_COOKIE[self::$usernameCookieName]) && 
 			//and token must be set
@@ -117,6 +126,7 @@ class LoginController{
 		//If username is missing from the post we may not login
 		if(empty($_POST[self::$postUsernameLocation])){
 			$this->messages->save(self::$usernameMissing);
+			$this->reloadPage();
 			return false;
 		}
 		//Otherwise we got something in here
@@ -125,8 +135,10 @@ class LoginController{
 		//If password is missing from the post we may absolutely not login
 		if(empty($_POST[self::$postPasswordLocation])){
 			//but save the postUsername so we can use it in the view
-			$this->username = $_POST[self::$postUsernameLocation];
+			$_SESSION["username"] = $_POST[self::$postUsernameLocation];
 			$this->messages->save(self::$passwordMissing);
+
+			$this->reloadPage();
 			return false;
 		}
 		//Otherwise we got something in here aswell
@@ -140,6 +152,7 @@ class LoginController{
 		//If we haven't logged in yet, and not returned yet
 		//The username or password is incorrect and as such, we did not login
 		$this->messages->save(self::$incorrectInfo);
+		$this->reloadPage();
 		return false;
 	}
 	//Logout the user, remove the cookies and the reload
