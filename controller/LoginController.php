@@ -12,22 +12,29 @@ class LoginController{
 	private $password;
 	private $messages;
 
+	//Statics so we can change them easier
 	private static $expiryTime = 108000;
 	private static $usernameCookieName = "somethingusername";
 	private static $tokenCookieName = "token";
+	private static $postUsernameLocation = "username";
+	private static $postPasswordLocation = "password";
+	private static $wrongInfoInCookie = "Felaktig information i cookie";
+	private static $loginViaCookieSuccess = "Inloggning lyckades via cookies";
+	private static $usernameMissing = "Användarnamn saknas";
+	private static $passwordMissing = "Lösenord saknas";
+	private static $incorrectInfo = "Felaktigt användarnamn och/eller lösenord";
+	private static $loggedOut = "Du har nu loggat ut";
+	private static $loggedInAndRemember = "Inloggning lyckades och vi kommer ihåg dig nästa gång";
+	private static $loggedIn = "Inloggnig lyckades";
 
 	function __construct(){
 		$this->model = new UserModel();
 		$this->messages = new CookieStorage();
 		$this->loginView = new LoginView($this->model, $this->messages);
 	}
-	function getLogin(){
-		$this->reloadIfDidLogIn();
-		return Helpers::getBaseHTML($this->loginView->getHead(),
-									$this->loginView->getLogin());
-	}
 	function getHTML(){
 		$this->reloadIfDidLogIn();
+
 		return Helpers::getBaseHTML($this->loginView->getHead(), 
 									$this->loginView->getBody());
 	}
@@ -35,46 +42,17 @@ class LoginController{
 		header("location: " . $_SERVER["PHP_SELF"]);
 		die;
 	}
+	//Reload the page if user logged in now
 	private function reloadIfDidLogIn(){
 		if($this->didUserLogin()){
 			$this->reloadPage();
 		}
 	}
-	private function getLogoutForm(){
-		$logoutFormHtml = "	<form method='post'>
-								<input type='hidden' name='logout'>
-								<input type='submit' value='Logout'>
-							</form>";
-
-		return $logoutFormHtml;
-	}
-	private function getMessage(){
-		$this->message = $this->messages->load();
-		$getMessageHtml = "<p>{$this->message}</p>";
-
-		return $getMessageHtml;
-	}
-	private function getLoginForm(){
-		$loginFormHtml = "<form method='post'>
-						Username
-						<input type='text' name='username' value={$this->username}>
-						Password
-						<input type='password' name='password'>
-						<input name='rememberme' type='checkbox'>
-						<input type='submit' value='Submit'>
-					</form>";
-
-			return $loginFormHtml;
-	}
-	private function getTimeSwedishFormat(){
-		setlocale(LC_TIME,"Swedish");
-		$swedishTime = ucfirst(utf8_encode(strftime("%A, den %#d %B &#229;r %Y. Klockan &#228;r [%H:%M:%S]")));
-
-		return $swedishTime;
-	}
+	//Do a check on the token and user
 	private function canLoginWithCookie($username, $cookie){
 		return $this->model->checkToken($username, $cookie);
 	}
+	//
 	private function loginWithCookie($username, $cookie){
 		//If the token in the cookie is correct
 		if($this->model->checkToken($username, $cookie)){
@@ -84,16 +62,19 @@ class LoginController{
 			return;
 		} else {
 			//Invalid cookie
-			$this->messages->save("Felaktig information i cookie");
+			$this->messages->save(self::$wrongInfoInCookie);
 			$this->reloadPage();
 		}
 		return;
 	}
+	//Remove the rememberme cookies
 	function removeRememberMeCookies($username){
 		setcookie(self::$usernameCookieName, false, -1);
 		setcookie(self::$tokenCookieName, false, -1);
 		return;
 	}
+	//Gets a new token for the user and then save it in both the user and the cookies
+	//So that the user can login again
 	private function saveRememberMeCookie($username){
 		$token = $this->model->getNewToken();
 
@@ -105,7 +86,11 @@ class LoginController{
 
 		return;
 	}
+	//Do the most of the checking to see if the user logged in
+	//Or logged out
+	//Also check if the user wanted to login with cookies
 	function didUserLogin(){
+		//Begin the checking to see if the user has a remember me cookie
 		if(!empty($_COOKIE[self::$usernameCookieName]) && 
 			//and token must be set
 			!empty($_COOKIE[self::$tokenCookieName]) && 
@@ -115,53 +100,68 @@ class LoginController{
 			if($this->canLoginWithCookie($_COOKIE[self::$usernameCookieName], $_COOKIE[self::$tokenCookieName])){
 				$this->loginWithCookie($_COOKIE[self::$usernameCookieName], $_COOKIE[self::$tokenCookieName]);
 				session_regenerate_id(true);
-				$this->messages->save("Inloggning lyckades via cookies");
+				$this->messages->save(self::$loginViaCookieSuccess);
 				return true;
 			}
 		}
+		//If the user didn't want to login iwht cookies
+		//Then the user didn't login
 		if($_SERVER["REQUEST_METHOD"]!=="POST"){
 			return false;
 		}
+		//If logout is set, then the user wants to logout
 		if(isset($_POST["logout"]) && $this->model->isUserLoggedIn()){
-			$this->model->logoutUser();
-			$this->messages->save("Du har nu loggat ut");
-			$this->removeRememberMeCookies($_COOKIE["username"]);
-			$this->reloadPage();
+			$this->logout();	
 		}
-		//somethingusername must be set
 		
 		//If username is missing from the post we may not login
-		if(empty($_POST["username"])){
-			$this->messages->save("Användarnamn saknas");
+		if(empty($_POST[self::$postUsernameLocation])){
+			$this->messages->save(self::$usernameMissing);
 			return false;
 		}
 		//Otherwise we got something in here
-		$postUsername = $_POST["username"];
+		//$postUsername = $_POST["username"];
 
 		//If password is missing from the post we may absolutely not login
-		if(empty($_POST["password"])){
+		if(empty($_POST[self::$postPasswordLocation])){
 			//but save the postUsername so we can use it in the view
-			$this->username = $postUsername;
-			$this->messages->save("Lösenord saknas");
+			$this->username = $_POST[self::$postUsernameLocation];
+			$this->messages->save(self::$passwordMissing);
 			return false;
 		}
 		//Otherwise we got something in here aswell
-		$postPassword = $_POST["password"];
+		//$postPassword = $_POST["password"];
 
 		//This is also really ugly with 2 nested ifs
-		if($this->model->userExists($postUsername,$postPassword)){
-			$this->model->loginUser($postUsername);	
-			session_regenerate_id(true);
-			if(!empty($_POST["rememberme"])){
-				$this->saveRememberMeCookie($postUsername);
-				$this->messages->save("Inloggning lyckades och vi kommer ihåg dig nästa gång");
-				return true;
-			} else {
-				$this->messages->save("Inloggnig lyckades");
-				return true;	
-			}
+		if($this->model->userExists($_POST[self::$postUsernameLocation],$_POST[self::$postPasswordLocation])){
+			$this->login($_POST[self::$postUsernameLocation]);	
+			return true;
 		}
-		$this->messages->save("Felaktigt användarnamn och/eller lösenord");
+		//If we haven't logged in yet, and not returned yet
+		//The username or password is incorrect and as such, we did not login
+		$this->messages->save(self::$incorrectInfo);
 		return false;
+	}
+	//Logout the user, remove the cookies and the reload
+	function logout(){
+		session_regenerate_id(true);
+		$this->model->logoutUser();
+		$this->messages->save(self::$loggedOut);
+		$this->removeRememberMeCookies();
+		$this->reloadPage();
+	}
+	//Login the user
+	//Might save cookie if the user wants to be remembered
+	function login(){
+		$this->model->loginUser($_POST[self::$postUsernameLocation]);	
+		session_regenerate_id(true);
+		if(!empty($_POST["rememberme"])){
+			$this->saveRememberMeCookie($_POST[self::$postUsernameLocation]);
+			$this->messages->save(self::$loggedInAndRemember);
+			//return true;
+		} else {
+			$this->messages->save(self::$loggedIn);
+			//return true;
+		}
 	}
 }

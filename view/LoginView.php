@@ -25,6 +25,9 @@ class LoginView{
 
 		return $getMessageHtml;
 	}
+	/*
+	* Login form with the username spliced in there if we need it to be, thanks PHP for being so odd and allowing these things to work
+	*/
 	private function getLoginForm(){
 		$loginFormHtml = "<form method='post'>
 						Username
@@ -37,6 +40,10 @@ class LoginView{
 
 			return $loginFormHtml;
 	}
+	/*
+	* Swedish time, (PHP is evil)
+	* Getting the formatting was difficult, and I can't be bottered to uppercase the month
+	*/
 	private function getTimeSwedishFormat(){
 		setlocale(LC_TIME,"Swedish");
 		$swedishTime = ucfirst(utf8_encode(strftime("%A, den %#d %B &#229;r %Y. Klockan &#228;r [%H:%M:%S]")));
@@ -50,6 +57,7 @@ class LoginView{
 		$headHtml = "<title>Whatnow</title>";
 		return $headHtml;
 	}
+
 	function getBody(){
 		if($this->model->isUserLoggedIn()){
 			$html = "<p>Inloggad</p>" . $this->getMessage() . $this->getLogoutForm();
@@ -59,11 +67,6 @@ class LoginView{
 
 		$html .= $this->getTimeSwedishFormat();
 
-		return $html;
-	}
-	function getLogin(){
-		$html = "<p>Ej inloggad</p>" . $this->getMessage() . $this->getLoginForm();
-		$html .= $this->getTimeSwedishFormat();
 		return $html;
 	}
 }
