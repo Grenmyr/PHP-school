@@ -32,7 +32,7 @@ class LoginController{
     function __construct(){
 		$this->model = new UserModel();
 		$this->messages = new CookieStorage();
-		$this->loginView = new LoginView($this->model, $this->messages, $this->username);
+		$this->loginView = new LoginView($this->model, $this->messages);
 	}
 
     /**

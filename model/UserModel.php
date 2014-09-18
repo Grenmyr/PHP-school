@@ -16,7 +16,7 @@ class UserModel{
 		return false;
 	}
 	function loginUser($username){
-		$_SESSION[UserModel::$loggedin] = true;
+		$_SESSION[self::$loggedin] = true;
 		$_SESSION["remote_addr"] = $_SERVER["REMOTE_ADDR"];
 		$_SESSION["useragent"] = $_SERVER["HTTP_USER_AGENT"];
 		return;
@@ -29,14 +29,14 @@ class UserModel{
 		return;
 	}
 	function isUserLoggedIn(){
-		if(isset($_SESSION[UserModel::$loggedin])){
+		if(isset($_SESSION[self::$loggedin])){
 			return true;
 		}
 		return false;
 	}
 	function checkToken($username, $cookie){
 		list($token, $expirytime) = $this->getTokenFromFile($username);
-		
+
 		if($token === $cookie && $expirytime >= time()){
 			return true;
 		}
