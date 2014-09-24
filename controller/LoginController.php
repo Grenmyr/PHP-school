@@ -12,7 +12,7 @@ class LoginController{
 	private $messages;
 
 	//Statics so we can change them easier
-	private static $expiryTime = 10;
+	private static $expiryTime = 108000;
 	private static $usernameCookieName = "somethingusername";
 	private static $tokenCookieName = "token";
 	private static $postUsernameLocation = "username";
@@ -56,8 +56,6 @@ class LoginController{
 		if($this->checkIfUserLoggedIn()){
 			$this->reloadPage();
 		}
-
-var_dump($_SESSION);
 	}
 	//Do a check on the token and user
 	private function canLoginWithCookie($username, $cookie){
@@ -164,6 +162,7 @@ var_dump($_SESSION);
 		}
 		//If we haven't logged in yet, and not returned yet
 		//The username or password is incorrect and as such, we did not login
+		$_SESSION["username"] = $_POST[self::$postUsernameLocation];
 		$this->messages->save(self::$incorrectInfo);
 		$this->reloadPage();
 		return false;

@@ -35,7 +35,11 @@ class LoginView{
 
 		$loginFormHtml = "<form method='post'>
 						Username
-						<input type='text' name='username'" . (($this->username) ? "value={$this->username}>": ">") . "Password
+						<input type='text' name='username'";
+		if($this->username)
+			$loginFormHtml.="value={$this->username}";
+
+		$loginFormHtml.=">Password
 						<input type='password' name='password'>
 						<input name='rememberme' type='checkbox'>
 						<input type='submit' value='Submit'>
