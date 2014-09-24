@@ -8,7 +8,7 @@ class LoginView{
 	private $password;
 	private $messages;
 
-	function __construct(UserModel $model, CookieStorage $cookieStorage, $username){
+	function __construct(UserModel $model, CookieStorage $cookieStorage){
 		$this->model = $model;
 		$this->messages = $cookieStorage;
 	}
