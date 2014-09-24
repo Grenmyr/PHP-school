@@ -8,10 +8,9 @@ class LoginView{
 	private $password;
 	private $messages;
 
-	function __construct(UserModel $model, CookieStorage $cookieStorage, $username){
+	function __construct(UserModel $model, CookieStorage $cookieStorage){
 		$this->model = $model;
 		$this->messages = $cookieStorage;
-		$this->username = @$_SESSION["username"];
 	}
 	private function getLogoutForm(){
 		$logoutFormHtml = "	<form method='post'>
@@ -30,10 +29,13 @@ class LoginView{
 	* Login form with the username spliced in there if we need it to be, thanks PHP for being so odd and allowing these things to work
 	*/
 	private function getLoginForm(){
+		$_SESSION["username"] = isset($_SESSION["username"]) ? $_SESSION["username"] : "";
+		$this->username = $_SESSION["username"];
+		$_SESSION["username"] = "";
+
 		$loginFormHtml = "<form method='post'>
 						Username
-						<input type='text' name='username' value={$this->username}>
-						Password
+						<input type='text' name='username'" . (($this->username) ? "value={$this->username}>": ">") . "Password
 						<input type='password' name='password'>
 						<input name='rememberme' type='checkbox'>
 						<input type='submit' value='Submit'>

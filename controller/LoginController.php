@@ -12,7 +12,7 @@ class LoginController{
 	private $messages;
 
 	//Statics so we can change them easier
-	private static $expiryTime = 108000;
+	private static $expiryTime = 10;
 	private static $usernameCookieName = "somethingusername";
 	private static $tokenCookieName = "token";
 	private static $postUsernameLocation = "username";
@@ -56,6 +56,8 @@ class LoginController{
 		if($this->checkIfUserLoggedIn()){
 			$this->reloadPage();
 		}
+
+var_dump($_SESSION);
 	}
 	//Do a check on the token and user
 	private function canLoginWithCookie($username, $cookie){
@@ -72,9 +74,10 @@ class LoginController{
 		} else {
 			//Invalid cookie
 			$this->messages->save(self::$wrongInfoInCookie);
+			$this->removeRememberMeCookies($_POST["username"]);
 			$this->reloadPage();
+			return;
 		}
-		return;
 	}
 	//Remove the rememberme cookies
 	function removeRememberMeCookies($username){
@@ -100,6 +103,11 @@ class LoginController{
 	//Also check if the user wanted to login with cookies
 	function checkIfUserLoggedIn(){
 		//Begin the checking to see if the user has a remember me cookie
+		if((isset($_COOKIE[self::$usernameCookieName]) && !isset($_COOKIE[self::$tokenCookieName]))||(isset($_COOKIE[self::$tokenCookieName] )&& !isset($_COOKIE[self::$usernameCookieName]))){
+			$this->messages->save(self::$wrongInfoInCookie);
+			$this->removeRememberMeCookies($_POST["username"]);
+			$this->reloadPage();
+		}
 		if(!empty($_COOKIE[self::$usernameCookieName]) && 
 			//and token must be set
 			!empty($_COOKIE[self::$tokenCookieName]) && 
@@ -111,6 +119,11 @@ class LoginController{
 				session_regenerate_id(true);
 				$this->messages->save(self::$loginViaCookieSuccess);
 				return true;
+			} else {
+				$this->messages->save(self::$wrongInfoInCookie);
+				$this->removeRememberMeCookies($_POST["username"]);
+				$this->reloadPage();
+				return false;
 			}
 		}
 		//If the user didn't want to login iwht cookies
