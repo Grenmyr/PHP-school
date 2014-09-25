@@ -1,32 +1,44 @@
 <?php
+/**
+ * Created by PhpStorm.
+ * User: dav
+ * Date: 2014-09-25
+ * Time: 15:19
+ */
+
 class CookieStorage {
-	//Stolen code since my code didn't want to work at first
-	//The code came from: https://github.com/dntoll/1dv408-HT14/blob/master/Like/src/CookieStorage.php
-	//I feel that it is justified since I wrote all other code for this and this is so simple
+   //private static $cookieName = "";
+   //private static $expiryTime = 108000;
+    private static $expiryTime = 108000;
+    private  static $usernameCookieName = "somethingusername";
+    private  static $tokenCookieName = "token";
 
-	private static $cookieName = "CookieStorage";
+   public  function clear($cookieName){
+        setcookie($cookieName, NULL, -1);
+    }
+    public function saveToken($token) {
+        setcookie(self::$tokenCookieName, $token,self::$expiryTime+time());
 
-	public function save($string) {
-		setcookie( self::$cookieName, $string, -1);
+        //var_dump($_COOKIE);
+        //die();
+        return self::$expiryTime+time();
+    }
+    public function saveUser($user) {
+        setcookie(self::$usernameCookieName, $user,self::$expiryTime);
 
-		//var_dump($_COOKIE);
-		//die();
-	}
-
-	public function load() {
-
-		//$ret = isset($_COOKIE["CookieStorage"]) ? $_COOKIE["CookieStorage"] : "";
-		if (isset($_COOKIE[self::$cookieName]))
-			$ret = $_COOKIE[self::$cookieName];
-		else
-			$ret = "";
-
-		setcookie(self::$cookieName, "", time() -1);
-
-		return $ret;
-	}
-	public function peek(){
-		if(isset($_COOKIE[self::$cookieName]))
-			return $_COOKIE[self::$cookieName];
-	}
-}
+        //var_dump($_COOKIE);
+        //die();
+    }
+    public function GetUserName(){
+        if(isset($_COOKIE[$this::$usernameCookieName])){
+            return $_COOKIE[$this::$usernameCookieName];
+        }
+        return false;
+    }
+    public function GetToken(){
+      if(isset($_COOKIE[$this::$tokenCookieName])){
+            return $_COOKIE[$this::$tokenCookieName];
+        }
+        return false;
+    }
+} 

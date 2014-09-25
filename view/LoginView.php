@@ -1,5 +1,5 @@
 <?php
-require_once("CookieStorage/CookieStorage.php");
+require_once("CookieStorage/Messages.php");
 
 class LoginView{
 	private $model;
@@ -8,7 +8,7 @@ class LoginView{
 	private $password;
 	private $messages;
 
-	function __construct(UserModel $model, CookieStorage $cookieStorage){
+	function __construct(UserModel $model, Messages $cookieStorage){
 		$this->model = $model;
 		$this->messages = $cookieStorage;
 	}
@@ -36,8 +36,9 @@ class LoginView{
 		$loginFormHtml = "<form method='post'>
 						Username
 						<input type='text' name='username'";
-		if($this->username)
+		if($this->username){
 			$loginFormHtml.="value={$this->username}";
+        }
 
 		$loginFormHtml.=">Password
 						<input type='password' name='password'>

@@ -2,19 +2,17 @@
 require_once("model/UserModel.php");
 require_once("view/LoginView.php");
 require_once("Helpers/Helpers.php");
+require_once("CookieStorage/Messages.php");
 require_once("CookieStorage/CookieStorage.php");
 
 class LoginController{
 	private $loginView;
 	private $model;
-	private $message;
-	private $username;
 	private $messages;
+    private $cookieStorage;
 
 	//Statics so we can change them easier
-	private static $expiryTime = 108000;
-	private static $usernameCookieName = "somethingusername";
-	private static $tokenCookieName = "token";
+
 	private static $postUsernameLocation = "username";
 	private static $postPasswordLocation = "password";
 	private static $wrongInfoInCookie = "Felaktig information i cookie";
@@ -31,8 +29,9 @@ class LoginController{
      */
     function __construct(){
 		$this->model = new UserModel();
-		$this->messages = new CookieStorage();
+		$this->messages = new Messages();
 		$this->loginView = new LoginView($this->model, $this->messages);
+        $this->cookieStorage = new CookieStorage();
 	}
 
     /**
@@ -47,14 +46,10 @@ class LoginController{
     /**
      *
      */
-    private function reloadPage(){
-		header("location: " . $_SERVER["PHP_SELF"]);
-		die;
-	}
 	//Reload the page if user logged in now
 	private function reloadIfDidLogIn(){
 		if($this->checkIfUserLoggedIn()){
-			$this->reloadPage();
+            $this->model->reloadPage();
 		}
 	}
 	//Do a check on the token and user
@@ -68,59 +63,61 @@ class LoginController{
 			$this->model->loginUser($username);
 			//Save a new cookie
 			$this->saveRememberMeCookie($username);
-			return;
 		} else {
 			//Invalid cookie
 			$this->messages->save(self::$wrongInfoInCookie);
-			$this->removeRememberMeCookies($_POST["username"]);
-			$this->reloadPage();
-			return;
+			$this->clearRememberMeCookies();
+            $this->model->reloadPage();
 		}
 	}
-	//Remove the rememberme cookies
-	function removeRememberMeCookies($username){
-		setcookie(self::$usernameCookieName, false, -1);
-		setcookie(self::$tokenCookieName, false, -1);
-		return;
+	//clear the content of Username and Token cookies.
+	function clearRememberMeCookies(){
+        $this->cookieStorage->clear($this->cookieStorage->GetUserName());
+        $this->cookieStorage->clear($this->cookieStorage->GetToken());
+
 	}
 	//Gets a new token for the user and then save it in both the user and the cookies
 	//So that the user can login again
 	private function saveRememberMeCookie($username){
 		$token = $this->model->getNewToken();
 
-		//Save the token for the user and also set the expiry time so that you may not cheat
-		$this->model->saveToken($username, $token, time()+self::$expiryTime);
+//        $this->cookieStorage->save(self::$usernameCookieName,$username,time()+self::$expiryTime);
+//        $this->cookieStorage->save(self::$tokenCookieName,$username,time()+self::$expiryTime);
+        $expiryTime = $this->cookieStorage->saveToken($token);
+        $this->cookieStorage->saveUser($username);
 
-		setcookie(self::$usernameCookieName, $username, time()+self::$expiryTime);
-		setcookie(self::$tokenCookieName, $token, time()+self::$expiryTime);
-
-		return;
+        //Save the token for the user and also set the expiry time so that you may not cheat
+        $this->model->saveToken($username, $token, $expiryTime);
 	}
 	//Do the most of the checking to see if the user logged in
 	//Or logged out
 	//Also check if the user wanted to login with cookies
 	function checkIfUserLoggedIn(){
 		//Begin the checking to see if the user has a remember me cookie
-		if((isset($_COOKIE[self::$usernameCookieName]) && !isset($_COOKIE[self::$tokenCookieName]))||(isset($_COOKIE[self::$tokenCookieName] )&& !isset($_COOKIE[self::$usernameCookieName]))){
+		if(($this->cookieStorage->GetUserName() && !$this->cookieStorage->GetToken())||(($this->cookieStorage->GetToken() )&& !$this->cookieStorage->GetUserName())){
 			$this->messages->save(self::$wrongInfoInCookie);
-			$this->removeRememberMeCookies($_POST["username"]);
-			$this->reloadPage();
+			$this->clearRememberMeCookies($this->cookieStorage->GetUserName());
+            //$this->messages->removeContent($_POST["username"]);
+			//$this->model->reloadPage();
 		}
-		if(!empty($_COOKIE[self::$usernameCookieName]) && 
+        $username = $this->cookieStorage->GetUserName();
+        $token = $this->cookieStorage->GetToken();
+		if(!empty($username) &&
 			//and token must be set
-			!empty($_COOKIE[self::$tokenCookieName]) && 
+			!empty($token) &&
 			//and we must not be logged in already, otherwise -> redirect loop
 			!$this->model->isUserLoggedIn()){
 			//this is really ugly
-			if($this->canLoginWithCookie($_COOKIE[self::$usernameCookieName], $_COOKIE[self::$tokenCookieName])){
-				$this->loginWithCookie($_COOKIE[self::$usernameCookieName], $_COOKIE[self::$tokenCookieName]);
+			if($this->canLoginWithCookie($this->cookieStorage->GetUserName(), $this->cookieStorage->GetToken())){
+				$this->loginWithCookie($this->cookieStorage->GetUserName(), $this->cookieStorage->GetToken());
 				session_regenerate_id(true);
 				$this->messages->save(self::$loginViaCookieSuccess);
 				return true;
 			} else {
 				$this->messages->save(self::$wrongInfoInCookie);
-				$this->removeRememberMeCookies($_POST["username"]);
-				$this->reloadPage();
+				$this->clearRememberMeCookies();
+
+                //$this->model->reloadPage();
 				return false;
 			}
 		}
@@ -137,7 +134,7 @@ class LoginController{
 		//If username is missing from the post we may not login
 		if(empty($_POST[self::$postUsernameLocation])){
 			$this->messages->save(self::$usernameMissing);
-			$this->reloadPage();
+            //$this->model->reloadPage();
 			return false;
 		}
 		//Otherwise we got something in here
@@ -149,7 +146,7 @@ class LoginController{
 			$_SESSION["username"] = $_POST[self::$postUsernameLocation];
 			$this->messages->save(self::$passwordMissing);
 
-			$this->reloadPage();
+            $this->model->reloadPage();
 			return false;
 		}
 		//Otherwise we got something in here aswell
@@ -164,7 +161,7 @@ class LoginController{
 		//The username or password is incorrect and as such, we did not login
 		$_SESSION["username"] = $_POST[self::$postUsernameLocation];
 		$this->messages->save(self::$incorrectInfo);
-		$this->reloadPage();
+        $this->model->reloadPage();
 		return false;
 	}
 	//Logout the user, remove the cookies and the reload
@@ -172,8 +169,8 @@ class LoginController{
 		session_regenerate_id(true);
 		$this->model->logoutUser();
 		$this->messages->save(self::$loggedOut);
-		$this->removeRememberMeCookies();
-		$this->reloadPage();
+		$this->clearRememberMeCookies();
+        $this->model->reloadPage();
 	}
 	//Login the user
 	//Might save cookie if the user wants to be remembered

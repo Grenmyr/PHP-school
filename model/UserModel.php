@@ -35,6 +35,9 @@ class UserModel{
 		return false;
 	}
 	function checkToken($username, $cookie){
+        //var_dump($this->getTokenFromFile($username));
+        //die;
+
 		list($token, $expirytime) = $this->getTokenFromFile($username);
 
 		if($token === $cookie && $expirytime >= time()){
@@ -60,4 +63,8 @@ class UserModel{
 	function getNewToken(){
 		return "hejdär";
 	}
+    public  function reloadPage(){
+        header("location: " . $_SERVER["PHP_SELF"]);
+        die;
+    }
 }
